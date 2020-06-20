@@ -1,4 +1,4 @@
-﻿<#
+<#
 .Synopsis
 Formats cmdlet help as MarkDown
 .Example
@@ -113,9 +113,22 @@ function Convert-HelpToMarkDown
             # Description
             if ($HelpInfo.Description) 
             {
+                $DescriptionParts = $HelpInfo.Description.Text -split 'DYNAMIC PARAMETERS'
                 Write-Output '### Description'
-                Write-Output ($HelpInfo.Description | Out-String -Width 1200).Trim()
+                Write-Output ( $DescriptionParts[0] | Out-String -Width 1200).Trim()
                 Write-Output ''
+                if ($DescriptionParts[1])
+                {
+                    Write-Output '### Dynamic Parameters'
+                    $DynParamText = $DescriptionParts[1] # | Out-String -Width 1200
+                    #Write-Debug $ParameterText
+                    $DynParamText = $DynParamText -replace '^\s*-', '#### '
+                    $DynParamText = $DynParamText.Trim()
+                    $DynParamText = [System.Web.HttpUtility]::HtmlEncode($DynParamText)
+
+                    Write-Output $($DynParamText)
+                    Write-Output ''
+                }
             }
 
             # Syntax
@@ -124,15 +137,27 @@ function Convert-HelpToMarkDown
             Write-Output ($Command | Get-Command -Syntax).Trim()
             Write-Output ``````
 
+            # Input Types
+            if ($HelpInfo.InputTypes)
+            {
+                Write-Output '### Input Type(s)'
+                Write-Output ''
+
+                foreach ($InputType in $HelpInfo.InputTypes)
+                {
+                    Write-Output "- $($InputType.InputType.Type.Name)"
+                }
+            }
+
             # Output Types
-            if ($Command.OutputType)
+            if ($HelpInfo.ReturnValues)
             {
                 Write-Output '### Output Type(s)'
                 Write-Output ''
 
-                foreach ($OutputType in $Command.OutputType)
+                foreach ($OutputType in $HelpInfo.ReturnValues)
                 {
-                    Write-Output "- $($OutputType.Name)"
+                    Write-Output "- $($OutputType.ReturnValue.Type.Name)"
                 }
 
                 Write-Output ''
